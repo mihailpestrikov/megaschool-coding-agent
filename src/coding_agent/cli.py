@@ -2,7 +2,7 @@ import typer
 from rich.console import Console
 
 from coding_agent.config import get_settings
-from coding_agent.agents import CodeAgent
+from coding_agent.agents import CodeAgent, ReviewerAgent
 
 app = typer.Typer(
     name="code-agent",
@@ -34,10 +34,19 @@ def run(
 @app.command()
 def review(
     pr: int = typer.Option(..., "--pr", "-p", help="Номер PR для ревью"),
+    repo: str | None = typer.Option(None, "--repo", "-r", help="Репозиторий (owner/repo)"),
 ):
     """Проверить PR и дать обратную связь."""
-    console.print(f"[blue]Проверяю PR #{pr}...[/blue]")
-    # TODO: реализовать в следующем шаге
+    try:
+        settings = get_settings()
+        if repo:
+            settings.github_repository = repo
+
+        agent = ReviewerAgent(settings)
+        agent.review(pr)
+    except Exception as e:
+        console.print(f"[red]Ошибка: {e}[/red]")
+        raise typer.Exit(1)
 
 
 @app.command()
@@ -46,7 +55,7 @@ def fix(
 ):
     """Исправить код по замечаниям из ревью."""
     console.print(f"[blue]Исправляю PR #{pr}...[/blue]")
-    # TODO: реализовать в следующем шаге
+    # TODO: реализовать в Шаге 7
 
 
 if __name__ == "__main__":
