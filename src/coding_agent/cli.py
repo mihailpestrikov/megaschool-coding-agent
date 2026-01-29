@@ -5,6 +5,7 @@ app = typer.Typer(
     name="code-agent",
     help="Агент для автоматизации разработки на GitHub",
     no_args_is_help=True,
+    add_completion=False,
 )
 console = Console()
 
