@@ -1,6 +1,9 @@
 import typer
 from rich.console import Console
 
+from coding_agent.config import get_settings
+from coding_agent.agents import CodeAgent
+
 app = typer.Typer(
     name="code-agent",
     help="Агент для автоматизации разработки на GitHub",
@@ -16,8 +19,16 @@ def run(
     repo: str | None = typer.Option(None, "--repo", "-r", help="Репозиторий (owner/repo)"),
 ):
     """Сгенерировать код по Issue и создать PR."""
-    console.print(f"[blue]Запускаю агента для Issue #{issue}...[/blue]")
-    # TODO: реализовать
+    try:
+        settings = get_settings()
+        if repo:
+            settings.github_repository = repo
+
+        agent = CodeAgent(settings)
+        agent.run(issue)
+    except Exception as e:
+        console.print(f"[red]Ошибка: {e}[/red]")
+        raise typer.Exit(1)
 
 
 @app.command()
@@ -26,7 +37,7 @@ def review(
 ):
     """Проверить PR и дать обратную связь."""
     console.print(f"[blue]Проверяю PR #{pr}...[/blue]")
-    # TODO: реализовать
+    # TODO: реализовать в следующем шаге
 
 
 @app.command()
@@ -35,7 +46,7 @@ def fix(
 ):
     """Исправить код по замечаниям из ревью."""
     console.print(f"[blue]Исправляю PR #{pr}...[/blue]")
-    # TODO: реализовать
+    # TODO: реализовать в следующем шаге
 
 
 if __name__ == "__main__":
