@@ -2,6 +2,12 @@
 
 Автоматизированная система разработки на GitHub. Читает Issue, генерирует код через LLM, создаёт Pull Request, проводит AI-ревью и итеративно исправляет замечания.
 
+## Ссылки
+
+Видео демо [Yandex disk](https://disk.yandex.ru/d/qcj6Qj3RDniXgw)
+Ссылка на тестовый проект [Github](https://github.com/mihailpestrikov/gorsk)
+
+
 ## Возможности
 
 - Генерация кода по описанию задачи в Issue
