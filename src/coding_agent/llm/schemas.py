@@ -15,6 +15,7 @@ class CodeGenerationResult(BaseModel):
     analysis: str
     files: list[FileChange]
     commit_message: str
+    validation_commands: list[str] = []
 
 
 class ReviewComment(BaseModel):
