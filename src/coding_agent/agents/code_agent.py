@@ -1,11 +1,12 @@
 from pathlib import Path
+
 from git import Repo
 from rich.console import Console
 
 from coding_agent.config import Settings
-from coding_agent.llm import LLMClient
-from coding_agent.github import GitHubClient
 from coding_agent.context import ContextCollector
+from coding_agent.github import GitHubClient
+from coding_agent.llm import LLMClient
 from coding_agent.validation import run_validation
 
 console = Console()
@@ -117,7 +118,7 @@ class CodeAgent:
         # 2. Проверяем лимит итераций
         if iteration >= max_iterations:
             console.print(f"[red]Достигнут лимит итераций ({max_iterations})[/red]")
-            self.github.add_comment(pr_number, "Достигнут лимит итераций. Требуется ручная проверка.")
+            self.github.add_comment(pr_number, "Лимит итераций. Требуется проверка.")
             self.github.add_label(pr_number, "needs-human-review")
             return False
 

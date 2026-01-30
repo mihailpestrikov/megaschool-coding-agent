@@ -1,13 +1,13 @@
 from dataclasses import dataclass
+
 from github import Github
-from github.PullRequest import PullRequest
 from github.Issue import Issue
+from github.PullRequest import PullRequest
 from github.Repository import Repository
 
 
 @dataclass
 class CIStatus:
-    """Статус CI проверок."""
     success: bool
     summary: str
 

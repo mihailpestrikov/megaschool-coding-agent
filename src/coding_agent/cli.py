@@ -1,8 +1,9 @@
 import typer
 from rich.console import Console
 
-from coding_agent.config import get_settings
 from coding_agent.agents import CodeAgent, ReviewerAgent
+from coding_agent.config import get_settings
+from coding_agent.repo_manager import RepoManager
 
 app = typer.Typer(
     name="code-agent",
@@ -11,62 +12,71 @@ app = typer.Typer(
     add_completion=False,
 )
 console = Console()
+repo_manager = RepoManager()
 
 
 @app.command()
 def run(
-    issue: int = typer.Option(..., "--issue", "-i", help="Номер Issue для реализации"),
-    repo: str | None = typer.Option(None, "--repo", "-r", help="Репозиторий (owner/repo)"),
+    issue: int = typer.Option(..., "--issue", "-i", help="Номер Issue"),
+    repo: str = typer.Option(..., "--repo", "-r", help="Репозиторий (owner/repo)"),
+    token: str | None = typer.Option(None, "--token", "-t", help="GitHub токен"),
 ):
     """Сгенерировать код по Issue и создать PR."""
-    try:
-        settings = get_settings()
-        if repo:
-            settings.github_repository = repo
+    settings = get_settings()
+    settings.github_repository = repo
+    if token:
+        settings.github_token = token
 
-        agent = CodeAgent(settings)
+    repo_url = f"https://github.com/{repo}.git"
+    repo_path = repo_manager.clone(repo_url, settings.github_token)
+    console.print(f"[dim]Склонировано в {repo_path}[/dim]")
+
+    try:
+        agent = CodeAgent(settings, repo_path)
         agent.run(issue)
-    except Exception as e:
-        console.print(f"[red]Ошибка: {e}[/red]")
-        raise typer.Exit(1)
+    finally:
+        repo_manager.cleanup(repo_path)
+        console.print("[dim]Временная папка удалена[/dim]")
 
 
 @app.command()
 def review(
-    pr: int = typer.Option(..., "--pr", "-p", help="Номер PR для ревью"),
-    repo: str | None = typer.Option(None, "--repo", "-r", help="Репозиторий (owner/repo)"),
+    pr: int = typer.Option(..., "--pr", "-p", help="Номер PR"),
+    repo: str = typer.Option(..., "--repo", "-r", help="Репозиторий (owner/repo)"),
+    token: str | None = typer.Option(None, "--token", "-t", help="GitHub токен"),
 ):
     """Проверить PR и дать обратную связь."""
-    try:
-        settings = get_settings()
-        if repo:
-            settings.github_repository = repo
+    settings = get_settings()
+    settings.github_repository = repo
+    if token:
+        settings.github_token = token
 
-        agent = ReviewerAgent(settings)
-        agent.review(pr)
-    except Exception as e:
-        console.print(f"[red]Ошибка: {e}[/red]")
-        raise typer.Exit(1)
+    agent = ReviewerAgent(settings)
+    agent.review(pr)
 
 
 @app.command()
 def fix(
-    pr: int = typer.Option(..., "--pr", "-p", help="Номер PR для исправления"),
-    repo: str | None = typer.Option(None, "--repo", "-r", help="Репозиторий (owner/repo)"),
+    pr: int = typer.Option(..., "--pr", "-p", help="Номер PR"),
+    repo: str = typer.Option(..., "--repo", "-r", help="Репозиторий (owner/repo)"),
+    token: str | None = typer.Option(None, "--token", "-t", help="GitHub токен"),
 ):
     """Исправить код по замечаниям из ревью."""
-    try:
-        settings = get_settings()
-        if repo:
-            settings.github_repository = repo
+    settings = get_settings()
+    settings.github_repository = repo
+    if token:
+        settings.github_token = token
 
-        agent = CodeAgent(settings)
-        success = agent.fix(pr)
-        if not success:
-            raise typer.Exit(1)
-    except Exception as e:
-        console.print(f"[red]Ошибка: {e}[/red]")
-        raise typer.Exit(1)
+    repo_url = f"https://github.com/{repo}.git"
+    repo_path = repo_manager.clone(repo_url, settings.github_token)
+    console.print(f"[dim]Склонировано в {repo_path}[/dim]")
+
+    try:
+        agent = CodeAgent(settings, repo_path)
+        agent.fix(pr)
+    finally:
+        repo_manager.cleanup(repo_path)
+        console.print("[dim]Временная папка удалена[/dim]")
 
 
 if __name__ == "__main__":

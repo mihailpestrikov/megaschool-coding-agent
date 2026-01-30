@@ -25,5 +25,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-        run: code-agent run --issue ${{ github.event.issue.number }}
+        run: code-agent run --repo ${{ github.repository }} --issue ${{ github.event.issue.number }}

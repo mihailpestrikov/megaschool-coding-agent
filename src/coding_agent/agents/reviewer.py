@@ -1,9 +1,10 @@
 import re
+
 from rich.console import Console
 
 from coding_agent.config import Settings
-from coding_agent.llm import LLMClient
 from coding_agent.github import GitHubClient
+from coding_agent.llm import LLMClient
 
 console = Console()
 
@@ -63,7 +64,6 @@ class ReviewerAgent:
         return result.approved
 
     def _extract_issue_number(self, text: str) -> int | None:
-        """Извлечь номер Issue из текста PR."""
         match = re.search(r'(?:closes|fixes|resolves)\s*#(\d+)', text, re.IGNORECASE)
         if match:
             return int(match.group(1))
