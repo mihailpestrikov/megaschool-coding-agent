@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     github_app_id: str | None = None
     github_private_key: str | None = None
     github_webhook_secret: str | None = None
-    max_iterations: int = 5
+    max_iterations: int = 2
 
     llm_model: str = "gemini/gemini-2.5-flash"
     gemini_api_key: str | None = None
