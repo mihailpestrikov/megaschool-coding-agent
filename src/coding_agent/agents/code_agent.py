@@ -112,7 +112,7 @@ class CodeAgent:
         self.git_repo.index.add(files)
         self.git_repo.index.commit(message)
         repo_url = f"https://x-access-token:{self.settings.github_token}@github.com/{self.settings.github_repository}.git"
-        self.git_repo.git.push(repo_url, branch_name, set_upstream=True)
+        self.git_repo.git.push(repo_url, branch_name, set_upstream=True, force=True)
 
     def fix(self, pr_number: int) -> bool:
         """Исправить код по замечаниям из ревью. Возвращает True если успешно."""
