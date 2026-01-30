@@ -4,6 +4,11 @@ on:
   issues:
     types: [labeled]
 
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
 jobs:
   generate-code:
     if: github.event.label.name == 'agent'
@@ -16,7 +21,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install
-        run: pip install git+https://github.com/mihailpestrikov/megaschool-coding-agent.git
+        run: pip install --no-cache-dir git+https://github.com/mihailpestrikov/megaschool-coding-agent.git
 
       - name: Run Code Agent
         env:

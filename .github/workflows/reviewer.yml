@@ -4,6 +4,11 @@ on:
   pull_request:
     types: [opened, synchronize]
 
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
 jobs:
   ci:
     runs-on: ubuntu-latest
@@ -28,7 +33,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - run: pip install git+https://github.com/mihailpestrikov/megaschool-coding-agent.git
+      - run: pip install --no-cache-dir git+https://github.com/mihailpestrikov/megaschool-coding-agent.git
 
       - name: AI Review
         env:
@@ -51,7 +56,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - run: pip install git+https://github.com/mihailpestrikov/megaschool-coding-agent.git
+      - run: pip install --no-cache-dir git+https://github.com/mihailpestrikov/megaschool-coding-agent.git
 
       - name: Fix by feedback
         env:
