@@ -111,10 +111,8 @@ class CodeAgent:
     def _commit_and_push(self, branch_name: str, message: str, files: list[str]):
         self.git_repo.index.add(files)
         self.git_repo.index.commit(message)
-        origin = self.git_repo.remote("origin")
         repo_url = f"https://x-access-token:{self.settings.github_token}@github.com/{self.settings.github_repository}.git"
-        origin.set_url(repo_url)
-        origin.push(branch_name, set_upstream=True)
+        self.git_repo.git.push(repo_url, branch_name, set_upstream=True)
 
     def fix(self, pr_number: int) -> bool:
         """Исправить код по замечаниям из ревью. Возвращает True если успешно."""
@@ -178,15 +176,13 @@ class CodeAgent:
         return True
 
     def _checkout_branch(self, branch_name: str):
-        origin = self.git_repo.remote("origin")
         repo_url = f"https://x-access-token:{self.settings.github_token}@github.com/{self.settings.github_repository}.git"
-        origin.set_url(repo_url)
-        origin.fetch()
+        self.git_repo.git.fetch(repo_url, branch_name)
 
         if branch_name in self.git_repo.heads:
             self.git_repo.heads[branch_name].checkout()
         else:
-            self.git_repo.create_head(branch_name, f"origin/{branch_name}").checkout()
+            self.git_repo.git.checkout("-b", branch_name, "FETCH_HEAD")
 
     def _parse_metadata(self, text: str) -> dict | None:
         import re
