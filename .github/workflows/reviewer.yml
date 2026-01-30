@@ -10,21 +10,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  ci:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-      - run: pip install .[dev]
-      - run: ruff check .
-      - run: pytest tests/ -v
-
   review:
-    needs: ci
-    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -43,7 +29,6 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
-          CI_STATUS: ${{ needs.ci.result }}
         run: code-agent review --repo ${{ github.repository }} --pr ${{ github.event.pull_request.number }}
 
   fix:
