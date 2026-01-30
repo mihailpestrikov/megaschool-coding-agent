@@ -1,7 +1,7 @@
+import os
 from typing import TypeVar
 
-from google import genai
-from google.genai.types import GenerateContentConfig
+import litellm
 
 from coding_agent.config import Settings
 from coding_agent.llm.prompts import CODE_GENERATION_PROMPT, FIX_PROMPT, REVIEW_PROMPT
@@ -12,8 +12,18 @@ T = TypeVar("T")
 
 class LLMClient:
     def __init__(self, settings: Settings):
-        self.client = genai.Client(api_key=settings.gemini_api_key)
-        self.model = settings.gemini_model
+        self.model = settings.llm_model
+        self._setup_api_keys(settings)
+
+    def _setup_api_keys(self, settings: Settings):
+        if settings.gemini_api_key:
+            os.environ["GEMINI_API_KEY"] = settings.gemini_api_key
+        if settings.openai_api_key:
+            os.environ["OPENAI_API_KEY"] = settings.openai_api_key
+        if settings.anthropic_api_key:
+            os.environ["ANTHROPIC_API_KEY"] = settings.anthropic_api_key
+        if settings.xai_api_key:
+            os.environ["XAI_API_KEY"] = settings.xai_api_key
 
     def generate_code(
         self, issue_title: str, issue_body: str, context: str
@@ -48,13 +58,21 @@ class LLMClient:
         return self._generate_json(prompt, CodeGenerationResult)
 
     def _generate_json(self, prompt: str, schema: type[T]) -> T:
-        config = GenerateContentConfig(
-            response_mime_type="application/json",
-            response_schema=schema,
+        schema_json = schema.model_json_schema()
+
+        system_msg = (
+            "Ты должен ответить ТОЛЬКО валидным JSON объектом по схеме.\n"
+            f"JSON Schema: {schema_json}"
         )
-        response = self.client.models.generate_content(
+
+        response = litellm.completion(
             model=self.model,
-            contents=prompt,
-            config=config,
+            messages=[
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": prompt},
+            ],
+            response_format={"type": "json_object"},
         )
-        return schema.model_validate_json(response.text)
+
+        text = response.choices[0].message.content
+        return schema.model_validate_json(text)
