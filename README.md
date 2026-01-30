@@ -284,7 +284,7 @@ Settings → Secrets and variables → Actions → Variables → New repository 
 1. GitHub → Settings → Developer settings → GitHub Apps → New GitHub App
 2. Заполнить:
    - **Name**: `My Coding Agent`
-   - **Homepage URL**: `https://github.com/your-username/coding-agent`
+   - **Homepage URL**: `https://github.com/mihailpestrikov/megaschool-coding-agent`
    - **Webhook URL**: `https://your-server.com/webhook` (или ngrok URL)
    - **Webhook secret**: сгенерировать случайную строку
 3. Permissions:
