@@ -304,7 +304,7 @@ Settings → Secrets and variables → Actions → Variables → New repository 
 ```bash
 # .env
 GITHUB_APP_ID=123456
-GITHUB_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
+GITHUB_PRIVATE_KEY="PRIVATE KEY"
 GITHUB_WEBHOOK_SECRET=your-webhook-secret
 GEMINI_API_KEY=xxx
 LLM_MODEL=gemini/gemini-2.5-flash
