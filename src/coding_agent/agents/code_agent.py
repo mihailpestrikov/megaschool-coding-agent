@@ -23,29 +23,38 @@ class CodeAgent:
         self.context_collector = ContextCollector(repo_path)
         self.git_repo = Repo(repo_path)
 
+    def _is_empty_repo(self) -> bool:
+        try:
+            self.git_repo.git.rev_parse("HEAD")
+            return False
+        except Exception:
+            return True
+
     def run(self, issue_number: int) -> str:
         """Реализовать Issue и создать PR. Возвращает URL созданного PR."""
 
-        # 1. Получаем Issue
         console.print(f"[blue]Читаю Issue #{issue_number}...[/blue]")
         issue = self.github.get_issue(issue_number)
         issue_text = f"{issue.title}\n\n{issue.body or ''}"
 
-        # 2. Собираем контекст репозитория
         console.print("[blue]Собираю контекст репозитория...[/blue]")
         context = self.context_collector.collect(issue_text)
 
-        # 3. Генерируем код через LLM
         console.print("[blue]Генерирую код...[/blue]")
         result = self.llm.generate_code(issue.title, issue.body or "", context)
         console.print(f"[dim]Анализ: {result.analysis}[/dim]")
 
-        # 4. Создаём веткуи
-        branch_name = f"agent/issue-{issue_number}"
-        console.print(f"[blue]Создаю ветку {branch_name}...[/blue]")
-        self._create_branch(branch_name)
+        is_empty = self._is_empty_repo()
 
-        # 5. Применяем изменения
+        if is_empty:
+            branch_name = "main"
+            console.print("[blue]Пустой репозиторий — пушу в main...[/blue]")
+            self.git_repo.git.checkout("--orphan", "main")
+        else:
+            branch_name = f"agent/issue-{issue_number}"
+            console.print(f"[blue]Создаю ветку {branch_name}...[/blue]")
+            self._create_branch(branch_name)
+
         console.print(f"[blue]Применяю изменения ({len(result.files)} файлов)...[/blue]")
         changed_files = []
         for file_change in result.files:
@@ -53,7 +62,6 @@ class CodeAgent:
             changed_files.append(file_change.path)
             console.print(f"  [green]{file_change.action}:[/green] {file_change.path}")
 
-        # 6. Локальная валидация
         if result.validation_commands:
             result = self._run_validation_loop(
                 result, issue.title, issue.body or "", context
@@ -62,25 +70,33 @@ class CodeAgent:
         console.print("[blue]Коммичу и пушу...[/blue]")
         self._commit_and_push(branch_name, result.commit_message, changed_files)
 
-        console.print("[blue]Создаю Pull Request...[/blue]")
-        pr_body = self._make_pr_body(issue_number, result.analysis)
-        pr = self.github.create_pr(
-            title=f"[#{issue_number}] {issue.title}",
-            body=pr_body,
-            branch=branch_name,
-        )
-
-        console.print(f"[green]Готово! PR создан: {pr.html_url}[/green]")
-        return pr.html_url
+        if is_empty:
+            self.github.add_comment(issue_number, f"Код добавлен в main.\n\n{result.analysis}")
+            console.print("[green]Готово! Код запушен в main[/green]")
+            return f"https://github.com/{self.settings.github_repository}"
+        else:
+            console.print("[blue]Создаю Pull Request...[/blue]")
+            pr_body = self._make_pr_body(issue_number, result.analysis)
+            pr = self.github.create_pr(
+                title=f"[#{issue_number}] {issue.title}",
+                body=pr_body,
+                branch=branch_name,
+            )
+            console.print(f"[green]Готово! PR создан: {pr.html_url}[/green]")
+            return pr.html_url
 
     def _create_branch(self, branch_name: str):
-        """Создать новую ветку и переключиться на неё."""
+        # Если ветка уже существует — просто переключаемся
         if branch_name in self.git_repo.heads:
-            self.git_repo.delete_head(branch_name, force=True)
+            self.git_repo.heads[branch_name].checkout()
+            return
 
-        base = self.git_repo.active_branch
-        new_branch = self.git_repo.create_head(branch_name, base)
-        new_branch.checkout()
+        try:
+            head_sha = self.git_repo.git.rev_parse("HEAD")
+            new_branch = self.git_repo.create_head(branch_name, head_sha)
+            new_branch.checkout()
+        except Exception:
+            self.git_repo.git.checkout("--orphan", branch_name)
 
     def _apply_file_change(self, file_change):
         filepath = self.repo_path / file_change.path
@@ -102,7 +118,6 @@ class CodeAgent:
         """Исправить код по замечаниям из ревью. Возвращает True если успешно."""
         import re
 
-        # 1. Получаем PR и парсим metadata
         console.print(f"[blue]Читаю PR #{pr_number}...[/blue]")
         pr = self.github.get_pr(pr_number)
         metadata = self._parse_metadata(pr.body or "")
@@ -115,36 +130,30 @@ class CodeAgent:
         iteration = metadata["iteration"]
         max_iterations = metadata["max"]
 
-        # 2. Проверяем лимит итераций
         if iteration >= max_iterations:
             console.print(f"[red]Достигнут лимит итераций ({max_iterations})[/red]")
             self.github.add_comment(pr_number, "Лимит итераций. Требуется проверка.")
             self.github.add_label(pr_number, "needs-human-review")
             return False
 
-        # 3. Получаем Issue и feedback
         console.print(f"[blue]Читаю Issue #{issue_number}...[/blue]")
         issue = self.github.get_issue(issue_number)
 
         console.print("[blue]Собираю замечания из ревью...[/blue]")
         feedback = self._get_review_feedback(pr)
 
-        # 4. Собираем контекст
         console.print("[blue]Собираю контекст...[/blue]")
         issue_text = f"{issue.title}\n\n{issue.body or ''}"
         context = self.context_collector.collect(issue_text)
 
-        # 5. Генерируем исправления
         console.print("[blue]Генерирую исправления...[/blue]")
         result = self.llm.generate_fix(feedback, issue.title, issue.body or "", context)
         console.print(f"[dim]Анализ: {result.analysis}[/dim]")
 
-        # 6. Переключаемся на ветку PR
         branch_name = pr.head.ref
         console.print(f"[blue]Переключаюсь на ветку {branch_name}...[/blue]")
         self._checkout_branch(branch_name)
 
-        # 7. Применяем изменения
         console.print(f"[blue]Применяю изменения ({len(result.files)} файлов)...[/blue]")
         changed_files = []
         for file_change in result.files:
@@ -152,12 +161,10 @@ class CodeAgent:
             changed_files.append(file_change.path)
             console.print(f"  [green]{file_change.action}:[/green] {file_change.path}")
 
-        # 8. Коммитим и пушим
         console.print("[blue]Коммичу и пушу...[/blue]")
         commit_msg = f"fix: {result.commit_message} (iteration {iteration + 1})"
         self._commit_and_push(branch_name, commit_msg, changed_files)
 
-        # 9. Обновляем metadata в PR
         new_body = re.sub(
             r'iteration=\d+',
             f'iteration={iteration + 1}',

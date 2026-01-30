@@ -17,10 +17,15 @@ class GitHubClient:
         self.github = Github(token)
         self.repo: Repository = self.github.get_repo(repo_name)
 
+    def get_default_branch(self) -> str:
+        return self.repo.default_branch
+
     def get_issue(self, number: int) -> Issue:
         return self.repo.get_issue(number)
 
-    def create_pr(self, title: str, body: str, branch: str, base: str = "main") -> PullRequest:
+    def create_pr(self, title: str, body: str, branch: str, base: str | None = None) -> PullRequest:
+        if base is None:
+            base = self.get_default_branch()
         return self.repo.create_pull(
             title=title,
             body=body,

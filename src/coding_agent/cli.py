@@ -1,4 +1,5 @@
 import typer
+from github import GithubException
 from rich.console import Console
 
 from coding_agent.agents import CodeAgent, ReviewerAgent
@@ -34,6 +35,12 @@ def run(
     try:
         agent = CodeAgent(settings, repo_path)
         agent.run(issue)
+    except GithubException as e:
+        if e.status == 404:
+            console.print(f"[red]Issue #{issue} не найден в {repo}[/red]")
+        else:
+            console.print(f"[red]Ошибка GitHub: {e.data.get('message', str(e))}[/red]")
+        raise typer.Exit(1)
     finally:
         repo_manager.cleanup(repo_path)
         console.print("[dim]Временная папка удалена[/dim]")
@@ -51,8 +58,15 @@ def review(
     if token:
         settings.github_token = token
 
-    agent = ReviewerAgent(settings)
-    agent.review(pr)
+    try:
+        agent = ReviewerAgent(settings)
+        agent.review(pr)
+    except GithubException as e:
+        if e.status == 404:
+            console.print(f"[red]PR #{pr} не найден в {repo}[/red]")
+        else:
+            console.print(f"[red]Ошибка GitHub: {e.data.get('message', str(e))}[/red]")
+        raise typer.Exit(1)
 
 
 @app.command()
@@ -74,6 +88,12 @@ def fix(
     try:
         agent = CodeAgent(settings, repo_path)
         agent.fix(pr)
+    except GithubException as e:
+        if e.status == 404:
+            console.print(f"[red]PR #{pr} не найден в {repo}[/red]")
+        else:
+            console.print(f"[red]Ошибка GitHub: {e.data.get('message', str(e))}[/red]")
+        raise typer.Exit(1)
     finally:
         repo_manager.cleanup(repo_path)
         console.print("[dim]Временная папка удалена[/dim]")
