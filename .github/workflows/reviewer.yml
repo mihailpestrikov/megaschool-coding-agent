@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [opened, synchronize]
 
+concurrency:
+  group: review-${{ github.head_ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
   issues: write
