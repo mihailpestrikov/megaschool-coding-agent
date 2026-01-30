@@ -35,15 +35,9 @@ class ReviewerAgent:
         console.print("[blue]Получаю diff...[/blue]")
         diff = self.github.get_pr_diff(pr_number)
 
-        # 3. Получаем статус CI
-        console.print("[blue]Проверяю CI...[/blue]")
-        ci_status = self.github.get_ci_status(pr_number)
-        console.print(f"[dim]CI: {ci_status.summary}[/dim]")
-
-        # 4. Генерируем ревью через LLM
+        # 3. Генерируем ревью через LLM
         console.print("[blue]Анализирую код...[/blue]")
-        ci_text = f"{'Успешно' if ci_status.success else 'Провалено'}: {ci_status.summary}"
-        result = self.llm.generate_review(diff, issue_title, issue_body, ci_text)
+        result = self.llm.generate_review(diff, issue_title, issue_body)
 
         # 5. Публикуем ревью
         console.print("[blue]Публикую ревью...[/blue]")

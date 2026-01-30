@@ -36,13 +36,12 @@ class LLMClient:
         return self._generate_json(prompt, CodeGenerationResult)
 
     def generate_review(
-        self, diff: str, issue_title: str, issue_body: str, ci_status: str
+        self, diff: str, issue_title: str, issue_body: str
     ) -> ReviewResult:
         prompt = REVIEW_PROMPT.format(
             diff=diff,
             issue_title=issue_title,
             issue_body=issue_body,
-            ci_status=ci_status,
         )
         return self._generate_json(prompt, ReviewResult)
 
