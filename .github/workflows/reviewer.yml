@@ -23,7 +23,7 @@ jobs:
 
       - name: AI Review
         env:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LLM_MODEL: ${{ vars.LLM_MODEL || 'gemini/gemini-2.5-flash' }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
