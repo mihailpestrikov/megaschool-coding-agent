@@ -7,11 +7,8 @@ from coding_agent.config import Settings
 from coding_agent.context import ContextCollector
 from coding_agent.github import GitHubClient
 from coding_agent.llm import LLMClient
-from coding_agent.validation import run_validation
 
 console = Console()
-
-MAX_VALIDATION_RETRIES = 3
 
 
 class CodeAgent:
@@ -61,11 +58,6 @@ class CodeAgent:
             self._apply_file_change(file_change)
             changed_files.append(file_change.path)
             console.print(f"  [green]{file_change.action}:[/green] {file_change.path}")
-
-        if result.validation_commands:
-            result = self._run_validation_loop(
-                result, issue.title, issue.body or "", context
-            )
 
         console.print("[blue]Коммичу и пушу...[/blue]")
         self._commit_and_push(branch_name, result.commit_message, changed_files)
@@ -205,34 +197,6 @@ class CodeAgent:
                 return review.body or "Требуются изменения (без комментария)"
 
         return "Нет замечаний"
-
-    def _run_validation_loop(self, result, issue_title: str, issue_body: str, context: str):
-        """Запускает валидацию и исправляет ошибки до MAX_VALIDATION_RETRIES раз."""
-        for attempt in range(MAX_VALIDATION_RETRIES):
-            console.print(f"[blue]Валидация (попытка {attempt + 1})...[/blue]")
-
-            validations = run_validation(result.validation_commands, str(self.repo_path))
-            failed = [v for v in validations if not v.success]
-
-            if not failed:
-                console.print("[green]Валидация пройдена[/green]")
-                return result
-
-            for v in failed:
-                console.print(f"[red]✗ {v.command}[/red]")
-
-            if attempt + 1 >= MAX_VALIDATION_RETRIES:
-                console.print("[yellow]Лимит попыток, коммитим как есть[/yellow]")
-                return result
-
-            errors = "\n".join(f"$ {v.command}\n{v.output}" for v in failed)
-            console.print("[blue]Исправляю ошибки...[/blue]")
-            result = self.llm.generate_fix(errors, issue_title, issue_body, context)
-
-            for file_change in result.files:
-                self._apply_file_change(file_change)
-
-        return result
 
     def _make_pr_body(self, issue_number: int, analysis: str) -> str:
         return f"""Closes #{issue_number}
