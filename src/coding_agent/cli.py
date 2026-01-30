@@ -60,7 +60,9 @@ def review(
 
     try:
         agent = ReviewerAgent(settings)
-        agent.review(pr)
+        approved = agent.review(pr)
+        if not approved:
+            raise typer.Exit(1)  # Триггерит fix job в workflow
     except GithubException as e:
         if e.status == 404:
             console.print(f"[red]PR #{pr} не найден в {repo}[/red]")
