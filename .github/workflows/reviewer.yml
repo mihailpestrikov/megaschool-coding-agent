@@ -24,17 +24,13 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip"
 
-      - run: pip install .
+      - run: pip install git+https://github.com/mihailpestrikov/megaschool-coding-agent.git
 
       - name: AI Review
-        id: review
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LLM_MODEL: ${{ vars.LLM_MODEL || 'gemini/gemini-2.5-flash' }}
@@ -51,16 +47,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip"
 
-      - run: pip install .
+      - run: pip install git+https://github.com/mihailpestrikov/megaschool-coding-agent.git
 
       - name: Fix by feedback
         env:

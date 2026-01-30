@@ -112,6 +112,8 @@ class CodeAgent:
         self.git_repo.index.add(files)
         self.git_repo.index.commit(message)
         origin = self.git_repo.remote("origin")
+        repo_url = f"https://x-access-token:{self.settings.github_token}@github.com/{self.settings.github_repository}.git"
+        origin.set_url(repo_url)
         origin.push(branch_name, set_upstream=True)
 
     def fix(self, pr_number: int) -> bool:
@@ -177,6 +179,8 @@ class CodeAgent:
 
     def _checkout_branch(self, branch_name: str):
         origin = self.git_repo.remote("origin")
+        repo_url = f"https://x-access-token:{self.settings.github_token}@github.com/{self.settings.github_repository}.git"
+        origin.set_url(repo_url)
         origin.fetch()
 
         if branch_name in self.git_repo.heads:
