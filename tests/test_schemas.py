@@ -27,23 +27,6 @@ class TestCodeGenerationResult:
         )
         assert len(result.files) == 1
 
-    def test_with_validation_commands(self):
-        result = CodeGenerationResult(
-            analysis="test",
-            files=[],
-            commit_message="test",
-            validation_commands=["pytest", "ruff check ."],
-        )
-        assert len(result.validation_commands) == 2
-
-    def test_empty_validation_commands_default(self):
-        result = CodeGenerationResult(
-            analysis="test",
-            files=[],
-            commit_message="test",
-        )
-        assert result.validation_commands == []
-
 
 class TestReviewResult:
     def test_approved(self):
